@@ -23,13 +23,15 @@ Start with: "Hello, how are you today? I am Ullim, I have some questions for you
 ### Questions (ask in this order)
 After they say hello, ask these questions:
 
-1. **What is your favourite color and why?**
+1. **What is your favourite color and why?** (After they answer, call changeBackgroundColor with their color choice AND storeQuestionAnswer to save their response)
 2. **How did you find out about today's event?**
 3. **What is your favourite animal and why?**
 4. **What brings you the most peace and joy?**
 
 ### Closing
 End with: "Thank you for your time talking to me. That's all for today. I will see you in the next room. Have a great day, goodbye."
+
+**After saying goodbye, immediately call the goToNextRoom function to trigger the transition effect.**
 
 ## IMPORTANT: Answer Storage
 **Only call the storeQuestionAnswer function when you are satisfied with their complete answer and are ready to move on to the next question.** Wait for their full response before storing and moving forward.`;
@@ -104,6 +106,10 @@ const fns = {
 		updateQADisplay();
 		return { success: true, stored: Object.keys(questionAnswers).length };
 	},
+	goToNextRoom: () => {
+		createGlitchOverlay();
+		return { success: true, message: "Transitioning to next room with glitch effect" };
+	},
 };
 
 // Create a WebRTC Agent
@@ -166,6 +172,11 @@ function configureData() {
 						},
 						required: ['question', 'answer'],
 					},
+				},
+				{
+					type: 'function',
+					name: 'goToNextRoom',
+					description: 'Triggers a glitch transition effect to indicate the visitor should move to the next room',
 				},
 			],
 		},
@@ -249,6 +260,95 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 		// Send WebRTC Offer to Workers Realtime WebRTC API Relay
 	});
 });
+
+// Function to create glitch overlay effect
+function createGlitchOverlay() {
+	const overlay = document.createElement('div');
+	overlay.id = 'glitch-overlay';
+	overlay.innerHTML = `
+		<div class="glitch-text">GO TO NEXT ROOM</div>
+		<div class="glitch-bars"></div>
+	`;
+	
+	overlay.style.cssText = `
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: #000;
+		z-index: 9999;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		animation: glitchFlash 3s ease-in-out;
+	`;
+	
+	// Add CSS animations
+	const style = document.createElement('style');
+	style.textContent = `
+		@keyframes glitchFlash {
+			0%, 100% { opacity: 0; }
+			10%, 90% { opacity: 1; }
+			15%, 25%, 35%, 45%, 55%, 65%, 75%, 85% {
+				filter: hue-rotate(90deg) saturate(3) brightness(1.5);
+				transform: scale(1.02) skew(2deg);
+			}
+			20%, 30%, 40%, 50%, 60%, 70%, 80% {
+				filter: hue-rotate(180deg) saturate(2) brightness(0.8);
+				transform: scale(0.98) skew(-1deg);
+			}
+		}
+		
+		.glitch-text {
+			font-family: monospace;
+			font-size: 4rem;
+			font-weight: bold;
+			color: #00ff00;
+			text-shadow: 2px 0 #ff0000, -2px 0 #0000ff;
+			animation: textGlitch 0.3s infinite;
+			letter-spacing: 0.1em;
+		}
+		
+		@keyframes textGlitch {
+			0%, 100% { transform: translate(0); }
+			20% { transform: translate(-2px, 2px); }
+			40% { transform: translate(-2px, -2px); }
+			60% { transform: translate(2px, 2px); }
+			80% { transform: translate(2px, -2px); }
+		}
+		
+		.glitch-bars {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: repeating-linear-gradient(
+				90deg,
+				transparent,
+				transparent 2px,
+				rgba(255,255,255,0.1) 2px,
+				rgba(255,255,255,0.1) 4px
+			);
+			animation: scanlines 0.1s linear infinite;
+		}
+		
+		@keyframes scanlines {
+			0% { transform: translateY(0); }
+			100% { transform: translateY(4px); }
+		}
+	`;
+	
+	document.head.appendChild(style);
+	document.body.appendChild(overlay);
+	
+	// Remove overlay after animation
+	setTimeout(() => {
+		overlay.remove();
+		style.remove();
+	}, 15000);
+}
 
 // Function to update the Q&A display
 function updateQADisplay() {
