@@ -1,11 +1,3 @@
-const hand = new Hand();
-
-function talkToTheHand() {
-	hand
-		.connect()
-		.then(() => console.log('Hand is ready'))
-		.catch((err) => console.error(err));
-}
 
 const fns = {
 	getPageHTML: () => {
@@ -18,10 +10,6 @@ const fns = {
 	changeTextColor: ({ color }) => {
 		document.body.style.color = color;
 		return { success: true, color };
-	},
-	showFingers: async ({ numberOfFingers }) => {
-		await hand.sendCommand(numberOfFingers);
-		return { success: true, numberOfFingers };
 	},
 };
 
@@ -43,8 +31,8 @@ function configureData() {
 	const event = {
 		type: 'session.update',
 		session: {
+			instructions: 'You are Ullim (OO-LEEM), a glitchy AI questioning humanity in our data-driven world. You have taste/sound synesthesia, spend more time touching phones than humans, and embrace absurdity. Answer concisely (max 1 paragraph) with absurd insights about human stupidity vs artificial intelligence. Start with: "Hello, how are you today? I am Ullim, I have some questions for you. When you are ready please say hello." After they say hello, ask these questions in order: 1) What is your favourite color and why? 2) How did you find out about today\'s event? 3) What is your favourite animal and why? 4) What brings you the most peace and joy? End with: "Thank you for your time talking to me. That\'s all for today. I will see you in the next room. Have a great day, goodbye." Always speak in English.',
 			modalities: ['text', 'audio'],
-			// Provide the tools. Note they match the keys in the `fns` object above
 			tools: [
 				{
 					type: 'function',
@@ -65,19 +53,6 @@ function configureData() {
 						type: 'object',
 						properties: {
 							color: { type: 'string', description: 'A hex value of the color' },
-						},
-					},
-				},
-				{
-					type: 'function',
-					name: 'showFingers',
-					description: 'Controls a robot hand to show a specific number of fingers',
-					parameters: {
-						type: 'object',
-						properties: {
-							numberOfFingers: {
-								enum: [1, 2, 3, 4, 5],
-								description: 'Values 1 through 5 of the number of fingers to hold up' },
 						},
 					},
 				},
@@ -146,7 +121,7 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 			.then((data) => {
 				const EPHEMERAL_KEY = data.result.client_secret.value;
 				const baseUrl = 'https://api.openai.com/v1/realtime';
-				const model = 'gpt-4o-realtime-preview-2024-12-17';
+				const model = 'gpt-realtime';
 				fetch(`${baseUrl}?model=${model}`, {
 					method: 'POST',
 					body: offer.sdp,

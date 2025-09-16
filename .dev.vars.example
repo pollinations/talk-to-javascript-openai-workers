@@ -1,1 +1,2 @@
-OPENAI_API_KEY="YOUR-API-KEY"
+# Copy this file to .dev.vars and fill in your OpenAI API key
+OPENAI_API_KEY=your_openai_api_key_here
