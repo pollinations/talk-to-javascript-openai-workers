@@ -31,10 +31,20 @@
 	</div>
 
 	<script>
-		// Simple password protection
+		// Simple password protection with session persistence
 		const correctPassword = "portrait";
+		const passwordKey = "ullim-auth";
 		
 		(function passwordProtect() {
+			// Check if password is already saved in localStorage
+			const savedPassword = localStorage.getItem(passwordKey);
+			
+			if (savedPassword === correctPassword) {
+				// Password already saved and correct - grant access
+				showMainContent();
+				return;
+			}
+			
 			const enteredPassword = prompt("Enter password to access Ullim:");
 			
 			if (enteredPassword === null) {
@@ -48,12 +58,17 @@
 				return passwordProtect();
 			}
 			
-			// Password correct - show main content and load script
+			// Password correct - save it and show content
+			localStorage.setItem(passwordKey, enteredPassword);
+			showMainContent();
+		})();
+		
+		function showMainContent() {
 			document.getElementById("main-content").style.display = "block";
 			const script = document.createElement('script');
 			script.src = '/script.js';
 			document.head.appendChild(script);
-		})();
+		}
 	</script>
 </body>
 </html>
