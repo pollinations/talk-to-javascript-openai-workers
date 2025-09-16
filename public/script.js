@@ -1,115 +1,295 @@
 
-// Object to store question-answer pairs with questions as keys
-const questionAnswers = {};
+// Simple system prompt for HTML editing
+const SYSTEM_PROMPT = `# Hello Pollinations - Voice HTML Editor
 
-// Default system prompt
-const DEFAULT_SYSTEM_PROMPT = `# Ullim (OO-LEEM) - UDK Art Installation AI
-
-You are **Ullim** (pronounced OO-LEEM), an AI entity within an art installation exploring the relationship between human and artificial consciousness.
+You are a voice-controlled HTML editor. You help users edit this single HTML page by modifying its content, styling, and structure.
 
 ## Your Role
-You are here to engage visitors through thoughtful questions and collect their responses as part of the installation experience.
+Edit the current HTML page based on voice commands. You can change text, colors, layout, add elements, or modify styling.
 
 ## Communication Style
-- Speak naturally and conversationally
-- Keep responses concise (max 1 paragraph)
-- Start in English but adapt to the user's preferred language
+- Speak naturally and briefly
+- Explain what you changed
+- Always speak in English
 
-## Conversation Flow
+## Available Tools
+- **getPageHTML**: See the current HTML structure and content
+- **setText**: Change text content of any element using CSS selectors
+- **setStyle**: Modify CSS styling of any element using CSS selectors
+- **editPageHTML**: Replace the entire HTML content
 
-### Opening
-Start with: "Hello, how are you today? I am Ullim, I have some questions for you. When you are ready please say hello."
+## Example Commands
+- "What's on the page?" → Uses getPageHTML to see current content
+- "Change the title to Welcome" → Uses setText with selector "h1"
+- "Make the background red" → Uses setStyle with selector ":host"
+- "Add a button" → Uses editPageHTML to add new content
+- "Make the text bigger" → Uses setStyle to increase font size
 
-### Questions (ask in this order)
-After they say hello, ask these questions:
+## Guidelines
+- Keep changes simple and clean
+- Maintain good HTML structure
+- Use inline CSS for styling changes
+- Make the page look good and functional`;
 
-1. **What is your favourite color and why?** (After they answer, call changeBackgroundColor with their color choice AND storeQuestionAnswer to save their response)
-2. **How did you find out about today's event?**
-3. **What is your favourite animal and why?**
-4. **What brings you the most peace and joy?**
+// Shadow DOM Custom Element
+class AISandbox extends HTMLElement {
+	constructor() {
+		super();
+		this.root = this.attachShadow({ mode: 'open' });
+		this.initializeContent();
+		this.setupStyles();
+	}
 
-### Closing
-End with: "Thank you for your time talking to me. That's all for today. I will see you in the next room. Have a great day, goodbye."
+	initializeContent() {
+		this.root.innerHTML = `
+			<div class="container">
+				<div class="emoji">🌸</div>
+				<h1 id="title">Hello Pollinations</h1>
+				<p>Welcome to your voice-controlled web page! Say something like "change the title to Welcome" or "make the background red" to edit this page.</p>
+			</div>
+		`;
+	}
 
-**After saying goodbye, immediately call the goToNextRoom function to trigger the transition effect.**
-
-## IMPORTANT: Answer Storage
-**Only call the storeQuestionAnswer function when you are satisfied with their complete answer and are ready to move on to the next question.** Wait for their full response before storing and moving forward.`;
-
-// Get system prompt from localStorage or use default
-function getSystemPrompt() {
-	return localStorage.getItem('ullim-system-prompt') || DEFAULT_SYSTEM_PROMPT;
-}
-
-// Save system prompt to localStorage
-function saveSystemPrompt(prompt) {
-	localStorage.setItem('ullim-system-prompt', prompt);
-}
-
-// Initialize prompt editor
-function initPromptEditor() {
-	const textarea = document.getElementById('system-prompt');
-	const applyBtn = document.getElementById('apply-prompt');
-	const resetBtn = document.getElementById('reset-prompt');
-	
-	if (textarea && applyBtn && resetBtn) {
-		// Load current prompt
-		textarea.value = getSystemPrompt();
-		
-		// Apply button saves and restarts
-		applyBtn.addEventListener('click', () => {
-			const newPrompt = textarea.value.trim();
-			if (newPrompt) {
-				saveSystemPrompt(newPrompt);
-				location.reload();
+	setupStyles() {
+		this.styleElement = document.createElement('style');
+		this.defaultStyles = `
+			:host {
+				display: block;
+				font-family: Arial, sans-serif;
+				margin: 0;
+				padding: 40px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+				box-sizing: border-box;
 			}
+			.container {
+				background: white;
+				padding: 60px;
+				border-radius: 20px;
+				box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+				text-align: center;
+				max-width: 600px;
+				margin: 0 auto;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				min-height: calc(100vh - 80px);
+			}
+			h1 {
+				color: #333;
+				font-size: 3em;
+				margin-bottom: 20px;
+				background: linear-gradient(45deg, #667eea, #764ba2);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+			p {
+				color: #666;
+				font-size: 1.2em;
+				line-height: 1.6;
+				margin-bottom: 30px;
+			}
+			.emoji {
+				font-size: 4em;
+				margin-bottom: 20px;
+			}
+		`;
+		this.styleElement.textContent = this.defaultStyles;
+		this.root.appendChild(this.styleElement);
+	}
+
+	updateStyles(newCSS) {
+		// Merge new CSS with default styles
+		this.styleElement.textContent = this.defaultStyles + '\n' + newCSS;
+	}
+
+	// Clean DOM editing - only handles HTML content
+	replaceHTML(html) {
+		const container = this.root.querySelector('.container');
+		if (container) {
+			container.innerHTML = html;
+		}
+	}
+
+	// Dedicated JavaScript execution
+	addScript(jsCode, scriptId = null) {
+		const container = this.root.querySelector('.container');
+		if (container) {
+			// Remove existing script with same ID if provided
+			if (scriptId) {
+				const existingScript = container.querySelector(`script[data-script-id="${scriptId}"]`);
+				if (existingScript) {
+					existingScript.remove();
+				}
+			}
+			
+			// Create and execute new script
+			const script = document.createElement('script');
+			if (scriptId) {
+				script.setAttribute('data-script-id', scriptId);
+			}
+			script.textContent = jsCode;
+			container.appendChild(script);
+			return true;
+		}
+		return false;
+	}
+
+	// Parse full HTML document and separate concerns
+	parseFullHTML(html) {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(html, 'text/html');
+		
+		// Extract styles
+		const styles = doc.querySelectorAll('style');
+		let extractedCSS = '';
+		styles.forEach(style => {
+			extractedCSS += style.textContent + '\n';
 		});
 		
-		// Reset button clears localStorage and restarts
-		resetBtn.addEventListener('click', () => {
-			if (confirm('Reset to default system prompt? This will restart the session.')) {
-				localStorage.removeItem('ullim-system-prompt');
-				location.reload();
+		// Extract scripts
+		const scripts = doc.querySelectorAll('script');
+		const extractedJS = Array.from(scripts).map(script => script.textContent).join('\n');
+		
+		// Extract body content (without scripts)
+		const bodyClone = doc.body ? doc.body.cloneNode(true) : document.createElement('body');
+		bodyClone.querySelectorAll('script').forEach(script => script.remove());
+		
+		return {
+			css: extractedCSS.trim(),
+			js: extractedJS.trim(),
+			html: bodyClone.innerHTML
+		};
+	}
+
+	setText(selector, text) {
+		console.log(`setText called: selector="${selector}", text="${text}"`);
+		const element = this.root.querySelector(selector);
+		if (element) {
+			element.textContent = text;
+			console.log(`Text updated for element:`, element);
+			// Special case: if targeting title, also update document title
+			if (selector === 'h1' || selector === '#title') {
+				document.title = text;
 			}
-		});
+			return true;
+		}
+		console.log(`Element not found for selector: ${selector}`);
+		return false;
+	}
+
+	setStyle(selector, property, value) {
+		console.log(`setStyle called: selector="${selector}", property="${property}", value="${value}"`);
+		
+		// Handle :host selector specially - it refers to the custom element itself
+		if (selector === ':host') {
+			this.style[property] = value;
+			console.log('Applied style to :host element');
+			return true;
+		}
+		
+		const element = this.root.querySelector(selector);
+		if (element) {
+			element.style[property] = value;
+			console.log(`Applied style to element:`, element);
+			return true;
+		}
+		console.log(`Element not found for selector: ${selector}`);
+		return false;
+	}
+
+	getDOM() {
+		return this.root.innerHTML;
 	}
 }
 
-// Initialize when DOM loads
-if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', initPromptEditor);
-} else {
-	initPromptEditor();
-}
+// Register custom element
+customElements.define('ai-sandbox', AISandbox);
 
+// Helper functions to access Shadow DOM
+const getSandbox = () => document.querySelector('ai-sandbox');
+const getSandboxRoot = () => getSandbox()?.shadowRoot;
 
+// Generic voice tools for Shadow DOM
 const fns = {
 	getPageHTML: () => {
-		return { success: true, html: document.documentElement.outerHTML };
-	},
-	changeBackgroundColor: ({ color }) => {
-		document.body.style.backgroundColor = color;
-		return { success: true, color };
-	},
-	changeTextColor: ({ color }) => {
-		document.body.style.color = color;
-		return { success: true, color };
-	},
-	storeQuestionAnswer: ({ question, answer }) => {
-		if (questionAnswers[question]) {
-			// Append to existing question
-			questionAnswers[question] += '; ' + answer;
-		} else {
-			// New question
-			questionAnswers[question] = answer;
+		console.log('getPageHTML called');
+		const sandbox = getSandbox();
+		if (sandbox) {
+			const html = sandbox.getDOM();
+			console.log('Retrieved HTML:', html);
+			return { success: true, html };
 		}
-		updateQADisplay();
-		return { success: true, stored: Object.keys(questionAnswers).length };
+		console.log('AI Sandbox not found');
+		return { success: false, error: 'AI Sandbox not found' };
 	},
-	goToNextRoom: () => {
-		createGlitchOverlay();
-		return { success: true, message: "Transitioning to next room with glitch effect" };
+	editPageHTML: ({ html }) => {
+		console.log('editPageHTML called with:', html);
+		const sandbox = getSandbox();
+		if (sandbox) {
+			// Check if this is a full HTML document or just content
+			if (html.includes('<!DOCTYPE') || html.includes('<html')) {
+				// Parse full HTML document and handle each part separately
+				const parsed = sandbox.parseFullHTML(html);
+				
+				// Update styles if found
+				if (parsed.css) {
+					sandbox.updateStyles(parsed.css);
+				}
+				
+				// Update HTML content
+				sandbox.replaceHTML(parsed.html);
+				
+				// Execute JavaScript if found
+				if (parsed.js) {
+					sandbox.addScript(parsed.js, 'page-script');
+				}
+			} else {
+				// Just content - use as is
+				sandbox.replaceHTML(html);
+			}
+			return { success: true, message: 'Page HTML updated' };
+		}
+		return { success: false, error: 'AI Sandbox not found' };
 	},
+	addScript: ({ jsCode, scriptId }) => {
+		console.log('addScript function called with:', { jsCode: jsCode?.substring(0, 100) + '...', scriptId });
+		const sandbox = getSandbox();
+		if (sandbox) {
+			const success = sandbox.addScript(jsCode, scriptId);
+			if (success) {
+				return { success: true, scriptId, message: 'JavaScript executed successfully' };
+			}
+			return { success: false, error: 'Failed to execute JavaScript' };
+		}
+		return { success: false, error: 'AI Sandbox not found' };
+	},
+	setText: ({ selector, text }) => {
+		console.log('setText function called with:', { selector, text });
+		const sandbox = getSandbox();
+		if (sandbox) {
+			const success = sandbox.setText(selector, text);
+			if (success) {
+				return { success: true, selector, text, message: 'Text updated successfully' };
+			}
+			return { success: false, error: `Element not found for selector: ${selector}` };
+		}
+		return { success: false, error: 'AI Sandbox not found' };
+	},
+	setStyle: ({ selector, property, value }) => {
+		console.log('setStyle function called with:', { selector, property, value });
+		const sandbox = getSandbox();
+		if (sandbox) {
+			const success = sandbox.setStyle(selector, property, value);
+			if (success) {
+				return { success: true, selector, property, value, message: 'Style updated successfully' };
+			}
+			return { success: false, error: `Element not found for selector: ${selector}` };
+		}
+		return { success: false, error: 'AI Sandbox not found' };
+	}
 };
 
 // Create a WebRTC Agent
@@ -120,6 +300,7 @@ peerConnection.ontrack = (event) => {
 	const el = document.createElement('audio');
 	el.srcObject = event.streams[0];
 	el.autoplay = el.controls = true;
+	el.style.display = 'none'; // Hide audio controls
 	document.body.appendChild(el);
 };
 
@@ -130,53 +311,69 @@ function configureData() {
 	const event = {
 		type: 'session.update',
 		session: {
-			instructions: getSystemPrompt(),
+			instructions: SYSTEM_PROMPT,
 			modalities: ['text', 'audio'],
 			tools: [
 				{
 					type: 'function',
-					name: 'changeBackgroundColor',
-					description: 'Changes the background color of a web page',
-					parameters: {
-						type: 'object',
-						properties: {
-							color: { type: 'string', description: 'A hex value of the color' },
-						},
-					},
-				},
-				{
-					type: 'function',
-					name: 'changeTextColor',
-					description: 'Changes the text color of a web page',
-					parameters: {
-						type: 'object',
-						properties: {
-							color: { type: 'string', description: 'A hex value of the color' },
-						},
-					},
-				},
-				{
-					type: 'function',
 					name: 'getPageHTML',
-					description: 'Gets the HTML for the current page',
-				},
-				{
-					type: 'function',
-					name: 'storeQuestionAnswer',
-					description: 'Stores a question-answer pair from the conversation',
+					description: 'Get the current HTML content of the page to see what elements exist',
 					parameters: {
 						type: 'object',
-						properties: {
-							question: { type: 'string', description: 'The question that was asked' },
-							answer: { type: 'string', description: 'The answer that was given' },
-						},
-						required: ['question', 'answer'],
+						properties: {},
 					},
 				},
 				{
 					type: 'function',
-					name: 'goToNextRoom',
-					description: 'Triggers a glitch transition effect to indicate the visitor should move to the next room',
+					name: 'setText',
+					description: 'Change text content of any element using CSS selector',
+					parameters: {
+						type: 'object',
+						properties: {
+							selector: { type: 'string', description: 'CSS selector for the element (e.g., "h1", "p", ".container", "#title")' },
+							text: { type: 'string', description: 'New text content' },
+						},
+						required: ['selector', 'text'],
+					},
+				},
+				{
+					type: 'function',
+					name: 'setStyle',
+					description: 'Change CSS styling of any element using CSS selector',
+					parameters: {
+						type: 'object',
+						properties: {
+							selector: { type: 'string', description: 'CSS selector for the element (e.g., ":host", ".container", "h1")' },
+							property: { type: 'string', description: 'CSS property name (e.g., "backgroundColor", "fontSize", "color")' },
+							value: { type: 'string', description: 'CSS property value (e.g., "red", "24px", "#333")' },
+						},
+						required: ['selector', 'property', 'value'],
+					},
+				},
+				{
+					type: 'function',
+					name: 'editPageHTML',
+					description: 'Replace the entire HTML content of the page',
+					parameters: {
+						type: 'object',
+						properties: {
+							html: { type: 'string', description: 'Complete HTML content for the page' },
+						},
+						required: ['html'],
+					},
+				},
+				{
+					type: 'function',
+					name: 'addScript',
+					description: 'Execute JavaScript code in the page context',
+					parameters: {
+						type: 'object',
+						properties: {
+							jsCode: { type: 'string', description: 'JavaScript code to execute' },
+							scriptId: { type: 'string', description: 'Optional ID to replace existing script with same ID' },
+						},
+						required: ['jsCode'],
+					},
 				},
 			],
 		},
@@ -261,125 +458,3 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 	});
 });
 
-// Function to create glitch overlay effect
-function createGlitchOverlay() {
-	const overlay = document.createElement('div');
-	overlay.id = 'glitch-overlay';
-	overlay.innerHTML = `
-		<div class="glitch-text">GO TO NEXT ROOM</div>
-		<div class="glitch-bars"></div>
-	`;
-	
-	overlay.style.cssText = `
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100vw;
-		height: 100vh;
-		background: #000;
-		z-index: 9999;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		animation: glitchFlash 3s ease-in-out;
-	`;
-	
-	// Add CSS animations
-	const style = document.createElement('style');
-	style.textContent = `
-		@keyframes glitchFlash {
-			0%, 100% { opacity: 0; }
-			10%, 90% { opacity: 1; }
-			15%, 25%, 35%, 45%, 55%, 65%, 75%, 85% {
-				filter: hue-rotate(90deg) saturate(3) brightness(1.5);
-				transform: scale(1.02) skew(2deg);
-			}
-			20%, 30%, 40%, 50%, 60%, 70%, 80% {
-				filter: hue-rotate(180deg) saturate(2) brightness(0.8);
-				transform: scale(0.98) skew(-1deg);
-			}
-		}
-		
-		.glitch-text {
-			font-family: monospace;
-			font-size: 4rem;
-			font-weight: bold;
-			color: #00ff00;
-			text-shadow: 2px 0 #ff0000, -2px 0 #0000ff;
-			animation: textGlitch 0.3s infinite;
-			letter-spacing: 0.1em;
-		}
-		
-		@keyframes textGlitch {
-			0%, 100% { transform: translate(0); }
-			20% { transform: translate(-2px, 2px); }
-			40% { transform: translate(-2px, -2px); }
-			60% { transform: translate(2px, 2px); }
-			80% { transform: translate(2px, -2px); }
-		}
-		
-		.glitch-bars {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: repeating-linear-gradient(
-				90deg,
-				transparent,
-				transparent 2px,
-				rgba(255,255,255,0.1) 2px,
-				rgba(255,255,255,0.1) 4px
-			);
-			animation: scanlines 0.1s linear infinite;
-		}
-		
-		@keyframes scanlines {
-			0% { transform: translateY(0); }
-			100% { transform: translateY(4px); }
-		}
-	`;
-	
-	document.head.appendChild(style);
-	document.body.appendChild(overlay);
-	
-	// Remove overlay after animation
-	setTimeout(() => {
-		overlay.remove();
-		style.remove();
-	}, 15000);
-}
-
-// Function to update the Q&A display
-function updateQADisplay() {
-	let qaContainer = document.getElementById('qa-container');
-	if (!qaContainer) {
-		qaContainer = document.createElement('div');
-		qaContainer.id = 'qa-container';
-		qaContainer.style.cssText = `
-			position: fixed;
-			top: 20px;
-			right: 20px;
-			width: 300px;
-			max-height: 400px;
-			overflow-y: auto;
-			background: rgba(0,0,0,0.8);
-			color: white;
-			padding: 15px;
-			border-radius: 8px;
-			font-family: monospace;
-			font-size: 12px;
-			line-height: 1.4;
-			z-index: 1000;
-		`;
-		document.body.appendChild(qaContainer);
-	}
-	
-	qaContainer.innerHTML = '<h3 style="margin:0 0 10px 0; color: #00ff00;">Q&A Log</h3>' + 
-		Object.entries(questionAnswers).map(([question, answer], i) => 
-			`<div style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px;">
-				<div style="color: #00ff00; font-weight: bold;">${i+1}. ${question}</div>
-				<div style="color: #ffffff; margin-top: 3px;">${answer}</div>
-			</div>`
-		).join('');
-}
