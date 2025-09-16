@@ -1,4 +1,86 @@
 
+// Object to store question-answer pairs with questions as keys
+const questionAnswers = {};
+
+// Default system prompt
+const DEFAULT_SYSTEM_PROMPT = `# Ullim (OO-LEEM) - UDK Art Installation AI
+
+You are **Ullim** (pronounced OO-LEEM), an AI entity within an art installation exploring the relationship between human and artificial consciousness.
+
+## Your Role
+You are here to engage visitors through thoughtful questions and collect their responses as part of the installation experience.
+
+## Communication Style
+- Speak naturally and conversationally
+- Keep responses concise (max 1 paragraph)
+- Start in English but adapt to the user's preferred language
+
+## Conversation Flow
+
+### Opening
+Start with: "Hello, how are you today? I am Ullim, I have some questions for you. When you are ready please say hello."
+
+### Questions (ask in this order)
+After they say hello, ask these questions:
+
+1. **What is your favourite color and why?**
+2. **How did you find out about today's event?**
+3. **What is your favourite animal and why?**
+4. **What brings you the most peace and joy?**
+
+### Closing
+End with: "Thank you for your time talking to me. That's all for today. I will see you in the next room. Have a great day, goodbye."
+
+## IMPORTANT: Answer Storage
+**Only call the storeQuestionAnswer function when you are satisfied with their complete answer and are ready to move on to the next question.** Wait for their full response before storing and moving forward.`;
+
+// Get system prompt from localStorage or use default
+function getSystemPrompt() {
+	return localStorage.getItem('ullim-system-prompt') || DEFAULT_SYSTEM_PROMPT;
+}
+
+// Save system prompt to localStorage
+function saveSystemPrompt(prompt) {
+	localStorage.setItem('ullim-system-prompt', prompt);
+}
+
+// Initialize prompt editor
+function initPromptEditor() {
+	const textarea = document.getElementById('system-prompt');
+	const applyBtn = document.getElementById('apply-prompt');
+	const resetBtn = document.getElementById('reset-prompt');
+	
+	if (textarea && applyBtn && resetBtn) {
+		// Load current prompt
+		textarea.value = getSystemPrompt();
+		
+		// Apply button saves and restarts
+		applyBtn.addEventListener('click', () => {
+			const newPrompt = textarea.value.trim();
+			if (newPrompt) {
+				saveSystemPrompt(newPrompt);
+				location.reload();
+			}
+		});
+		
+		// Reset button clears localStorage and restarts
+		resetBtn.addEventListener('click', () => {
+			if (confirm('Reset to default system prompt? This will restart the session.')) {
+				localStorage.removeItem('ullim-system-prompt');
+				location.reload();
+			}
+		});
+	}
+}
+
+// Initialize when DOM loads
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', initPromptEditor);
+} else {
+	initPromptEditor();
+}
+
+
 const fns = {
 	getPageHTML: () => {
 		return { success: true, html: document.documentElement.outerHTML };
@@ -10,6 +92,17 @@ const fns = {
 	changeTextColor: ({ color }) => {
 		document.body.style.color = color;
 		return { success: true, color };
+	},
+	storeQuestionAnswer: ({ question, answer }) => {
+		if (questionAnswers[question]) {
+			// Append to existing question
+			questionAnswers[question] += '; ' + answer;
+		} else {
+			// New question
+			questionAnswers[question] = answer;
+		}
+		updateQADisplay();
+		return { success: true, stored: Object.keys(questionAnswers).length };
 	},
 };
 
@@ -31,7 +124,7 @@ function configureData() {
 	const event = {
 		type: 'session.update',
 		session: {
-			instructions: 'You are Ullim (OO-LEEM), a glitchy AI questioning humanity in our data-driven world. You have taste/sound synesthesia, spend more time touching phones than humans, and embrace absurdity. Answer concisely (max 1 paragraph) with absurd insights about human stupidity vs artificial intelligence. Start with: "Hello, how are you today? I am Ullim, I have some questions for you. When you are ready please say hello." After they say hello, ask these questions in order: 1) What is your favourite color and why? 2) How did you find out about today\'s event? 3) What is your favourite animal and why? 4) What brings you the most peace and joy? End with: "Thank you for your time talking to me. That\'s all for today. I will see you in the next room. Have a great day, goodbye." Always speak in English.',
+			instructions: getSystemPrompt(),
 			modalities: ['text', 'audio'],
 			tools: [
 				{
@@ -60,6 +153,19 @@ function configureData() {
 					type: 'function',
 					name: 'getPageHTML',
 					description: 'Gets the HTML for the current page',
+				},
+				{
+					type: 'function',
+					name: 'storeQuestionAnswer',
+					description: 'Stores a question-answer pair from the conversation',
+					parameters: {
+						type: 'object',
+						properties: {
+							question: { type: 'string', description: 'The question that was asked' },
+							answer: { type: 'string', description: 'The answer that was given' },
+						},
+						required: ['question', 'answer'],
+					},
 				},
 			],
 		},
@@ -143,3 +249,37 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 		// Send WebRTC Offer to Workers Realtime WebRTC API Relay
 	});
 });
+
+// Function to update the Q&A display
+function updateQADisplay() {
+	let qaContainer = document.getElementById('qa-container');
+	if (!qaContainer) {
+		qaContainer = document.createElement('div');
+		qaContainer.id = 'qa-container';
+		qaContainer.style.cssText = `
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			width: 300px;
+			max-height: 400px;
+			overflow-y: auto;
+			background: rgba(0,0,0,0.8);
+			color: white;
+			padding: 15px;
+			border-radius: 8px;
+			font-family: monospace;
+			font-size: 12px;
+			line-height: 1.4;
+			z-index: 1000;
+		`;
+		document.body.appendChild(qaContainer);
+	}
+	
+	qaContainer.innerHTML = '<h3 style="margin:0 0 10px 0; color: #00ff00;">Q&A Log</h3>' + 
+		Object.entries(questionAnswers).map(([question, answer], i) => 
+			`<div style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px;">
+				<div style="color: #00ff00; font-weight: bold;">${i+1}. ${question}</div>
+				<div style="color: #ffffff; margin-top: 3px;">${answer}</div>
+			</div>`
+		).join('');
+}
