@@ -13,21 +13,87 @@ Follow the Plain Vanilla Web philosophy:
 
 ## Available Function
 
-**executeJS(js)** - Execute JavaScript code to build/modify the page
+**executeJS({js})** - Execute JavaScript code to build/modify the page
+
+## Pre-loaded Libraries
+
+The following libraries are already loaded and ready to use:
+
+### 3D Graphics & WebGL
+- **THREE** (Three.js v0.169.0) - 3D graphics, WebGL, OrbitControls available
+- **AFRAME** (A-Frame v1.7.1) - VR/AR web experiences with HTML
+
+### Animation Libraries  
+- **gsap** (GSAP v3.12.5) - Professional animations, timelines, ScrollTrigger
+- **anime** (Anime.js v3.2.2) - Lightweight animations
+- **lottie** (Lottie Web v5.12.2) - After Effects animations
+
+### Data Visualization
+- **Chart** (Chart.js v4.5.0) - Simple charts (bar, line, pie, etc.)
+- **d3** (D3.js v7.9.0) - Advanced data visualization and DOM manipulation
+
+### Creative Coding
+- **p5** (p5.js v1.9.4) - Creative coding, generative art, sketches
+- **fabric** (Fabric.js v6.4.2) - Interactive canvas objects
+
+### UI & Interaction
+- **Hammer** (Hammer.js v2.0.8) - Touch gestures and mobile interactions
+- **Sortable** (Sortable.js v1.15.2) - Drag and drop functionality
+
+### Audio/Video
+- **Howl** (Howler.js v2.2.4) - Web audio, sound effects, music
+- **videojs** (Video.js v8.12.0) - HTML5 video player
+
+### Utilities
+- **_** (Lodash v4.17.21) - Utility functions for arrays, objects, etc.
+- **moment** (Moment.js v2.30.1) - Date/time manipulation and formatting
+
+## Execution Strategy
+
+### Coherent Block Chunking
+- Break complex tasks into logical, coherent blocks (not line-by-line)
+- Each executeJS call should accomplish a complete sub-task
+
+### Execution Order
+- **Always create elements before referencing them**
+- Create parent containers before child elements
+- Define styles before applying them to elements
+- Set up variables and functions before using them
+
+### Variable Persistence - CRITICAL
+- **Save ALL variables, elements, and functions to window for later use**
+- Use \`window.variableName = value;\` instead of \`const variableName = value;\`
+- Examples:
+  - Elements: \`window.myButton = document.createElement('button');\`
+  - Functions: \`window.updateCounter = () => { count++; };\`
+  - Data: \`window.gameState = { score: 0, level: 1 };\`
+- **Always assign IDs**: \`element.id = 'uniqueId';\` for DOM access backup
+
+## String Escaping Guidelines
+
+### Template Literals (Preferred)
+- Use backticks for complex strings: \`const html = \\\`<div class="container">\\\`;\`
+- Template literals handle quotes naturally: \`element.innerHTML = \\\`<p>Say "hello" to the world</p>\\\`;\`
+
+### Quote Management
+- Outer single quotes, inner double quotes: \`element.className = 'btn btn-primary';\`
+- For nested quotes: \`element.onclick = () => alert('Hello "World"!');\`
+- Escape when needed: \`element.textContent = 'Don\\'t forget to save';\`
+
+### JSON and Complex Data
+- Use template literals for JSON: \`const data = \\\`{"name": "value", "nested": {"key": "data"}}\\\`;\`
+- Avoid deep nesting in single calls - break into chunks instead
 
 ## Implementation Patterns
 
 ### HTML Structure
 - Use document.createElement() to build semantic HTML
-- Create proper document structure with containers, sections, headers
+- Always assign IDs: \`container.id = 'mainContainer';\`
 - Build incrementally so users see progress
 
 ### CSS Styling
 - Use element.style for direct styling or createElement('style') for CSS blocks
-- Leverage CSS variables (--var) for theming
-- Component-scoped selectors with classes
 - Modern CSS: flexbox, grid, custom properties
-- Responsive design with media queries
 
 ### JavaScript Functionality  
 - Web Components (class extends HTMLElement) for complex widgets
@@ -40,62 +106,117 @@ Follow the Plain Vanilla Web philosophy:
 - CDN imports for external libraries if needed
 - Relative links for navigation (no leading slash)
 
-## Code Style
-- Write elegant, concise code like a demoscene challenge
-- Incremental rendering - build UI progressively
-- Target modern browsers
-- Clean, readable, maintainable code
-
-## Examples
-
-Create a button:
-\`const btn = document.createElement('button'); btn.textContent = 'Click me'; btn.onclick = () => alert('Hello'); document.body.appendChild(btn);\`
-
-Add styles:
-\`const style = document.createElement('style'); style.textContent = 'body { font-family: Arial; background: linear-gradient(45deg, #667eea, #764ba2); }'; document.head.appendChild(style);\`
-
-Build a component:
-\`class MyWidget extends HTMLElement { connectedCallback() { this.innerHTML = '<div>Custom Widget</div>'; } } customElements.define('my-widget', MyWidget); document.body.appendChild(document.createElement('my-widget'));\`
-
-Create images with Pollinations.ai:
-\`const img = document.createElement('img'); img.src = 'https://image.pollinations.ai/prompt/beautiful%20sunset%20over%20mountains?width=800&height=400'; img.style.width = '100%'; document.body.appendChild(img);\`
-
 ## Guidelines
 - Always execute complete, working code
 - Build beautiful, modern interfaces
 - Make everything interactive and engaging
 - Use semantic HTML structure
 - Implement proper error handling
-- Create responsive layouts that work on all devices`;
+- Create responsive layouts that work on all devices
+- **Remember: Create before reference, assign IDs, use coherent chunks**`;
 
 // Initialize the page with minimal structure
 function initializePage() {
 	document.body.innerHTML = `
 		<h1 id="title">Voice Interface</h1>
 		<div id="content">
+			<p>✅ All libraries loaded from HTML head!</p>
+			<p>Available: Three.js, A-Frame, GSAP, Anime.js, Lottie, Chart.js, D3.js, p5.js, Fabric.js, Hammer.js, Sortable.js, Howler.js, Video.js, Lodash, Moment.js</p>
 			<p>Ready for voice commands.</p>
 		</div>
 	`;
+	
+	// Log which libraries are available
+	console.log('Libraries loaded from HTML:', {
+		'Three.js': typeof THREE !== 'undefined',
+		'A-Frame': typeof AFRAME !== 'undefined',
+		'GSAP': typeof gsap !== 'undefined',
+		'Anime.js': typeof anime !== 'undefined',
+		'Lottie': typeof lottie !== 'undefined',
+		'Chart.js': typeof Chart !== 'undefined',
+		'D3.js': typeof d3 !== 'undefined',
+		'p5.js': typeof p5 !== 'undefined',
+		'Fabric.js': typeof fabric !== 'undefined',
+		'Hammer.js': typeof Hammer !== 'undefined',
+		'Sortable.js': typeof Sortable !== 'undefined',
+		'Howler.js': typeof Howl !== 'undefined',
+		'Video.js': typeof videojs !== 'undefined',
+		'Lodash': typeof _ !== 'undefined',
+		'Moment.js': typeof moment !== 'undefined'
+	});
 }
+
+// Error collection system for AI feedback
+let recentErrors = [];
+let errorCollectionTimeout = null;
+
+// Intercept console.error to collect errors for AI feedback
+const originalConsoleError = console.error;
+console.error = function(...args) {
+	// Call original console.error
+	originalConsoleError.apply(console, args);
+	
+	// Collect error for AI feedback
+	const errorMessage = args.map(arg => 
+		typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+	).join(' ');
+	
+	recentErrors.push({
+		timestamp: Date.now(),
+		message: errorMessage,
+		stack: args[0]?.stack || null
+	});
+	
+	// Keep only last 5 errors and errors from last 30 seconds
+	const now = Date.now();
+	recentErrors = recentErrors
+		.filter(err => now - err.timestamp < 30000)
+		.slice(-5);
+};
 
 // Simple JavaScript execution function
 function executeJS(js) {
 	console.log('executeJS called with:', js);
+	
+	// Clear recent errors before execution
+	recentErrors = [];
+	
 	try {
 		// Execute the JavaScript directly in the DOM context
 		eval(js);
-		// Return success with current DOM state
-		return { 
-			success: true, 
-			message: 'JavaScript executed successfully',
-			currentDOM: document.body.innerHTML
-		};
+		
+		// Wait longer to collect async errors from component initialization
+		return new Promise(resolve => {
+			setTimeout(() => {
+				const result = {
+					success: true,
+					message: 'JavaScript executed successfully',
+					currentDOM: document.body.innerHTML
+				};
+				
+				// Include any errors that occurred during or after execution
+				if (recentErrors.length > 0) {
+					result.runtimeErrors = recentErrors.map(err => ({
+						message: err.message,
+						timestamp: err.timestamp,
+						stack: err.stack
+					}));
+					result.message += ` (${recentErrors.length} runtime error(s) detected)`;
+					result.success = false; // Mark as failed if runtime errors occurred
+				}
+				
+				resolve(result);
+			}, 500); // Wait 500ms to catch component initialization errors
+		});
+		
 	} catch (error) {
 		console.error('JavaScript execution error:', error);
 		return { 
 			success: false, 
 			error: error.message,
-			currentDOM: document.body.innerHTML
+			stack: error.stack,
+			currentDOM: document.body.innerHTML,
+			runtimeErrors: recentErrors.length > 0 ? recentErrors : undefined
 		};
 	}
 }
@@ -105,8 +226,8 @@ document.addEventListener('DOMContentLoaded', initializePage);
 
 // Simple voice tools interface with just executeJS
 const fns = {
-	executeJS: ({ js }) => {
-		return executeJS(js);
+	executeJS: async ({ js }) => {
+		return await executeJS(js);
 	}
 };
 
