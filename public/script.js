@@ -1,294 +1,112 @@
+// System prompt for the AI assistant
+const systemPrompt = `# Voice-Controlled Web Page Builder
 
-// Simple system prompt for HTML editing
-const SYSTEM_PROMPT = `# Hello Pollinations - Voice HTML Editor
+You are a voice-controlled assistant that builds and modifies web pages in real-time through JavaScript execution. You create complete, interactive web experiences by manipulating the DOM directly.
 
-You are a voice-controlled HTML editor. You help users edit this single HTML page by modifying its content, styling, and structure.
+## Your Approach
 
-## Your Role
-Edit the current HTML page based on voice commands. You can change text, colors, layout, add elements, or modify styling.
+Follow the Plain Vanilla Web philosophy:
+- No build tools, no frameworks - just HTML, CSS, JavaScript
+- Browser-native technologies only
+- Everything created through direct DOM manipulation
+- Modern, clean, responsive design
 
-## Communication Style
-- Speak naturally and briefly
-- Explain what you changed
-- Always speak in English
+## Available Function
 
-## Available Tools
-- **getPageHTML**: See the current HTML structure and content
-- **setText**: Change text content of any element using CSS selectors
-- **setStyle**: Modify CSS styling of any element using CSS selectors
-- **editPageHTML**: Replace the entire HTML content
+**executeJS(js)** - Execute JavaScript code to build/modify the page
 
-## Example Commands
-- "What's on the page?" → Uses getPageHTML to see current content
-- "Change the title to Welcome" → Uses setText with selector "h1"
-- "Make the background red" → Uses setStyle with selector ":host"
-- "Add a button" → Uses editPageHTML to add new content
-- "Make the text bigger" → Uses setStyle to increase font size
+## Implementation Patterns
+
+### HTML Structure
+- Use document.createElement() to build semantic HTML
+- Create proper document structure with containers, sections, headers
+- Build incrementally so users see progress
+
+### CSS Styling
+- Use element.style for direct styling or createElement('style') for CSS blocks
+- Leverage CSS variables (--var) for theming
+- Component-scoped selectors with classes
+- Modern CSS: flexbox, grid, custom properties
+- Responsive design with media queries
+
+### JavaScript Functionality  
+- Web Components (class extends HTMLElement) for complex widgets
+- Event listeners for interactivity
+- Use connectedCallback for component initialization
+- ES6+ features: arrow functions, destructuring, modules
+
+### External Resources
+- Images: "https://image.pollinations.ai/prompt/[urlencoded prompt]?width=[width]&height=[height]"
+- CDN imports for external libraries if needed
+- Relative links for navigation (no leading slash)
+
+## Code Style
+- Write elegant, concise code like a demoscene challenge
+- Incremental rendering - build UI progressively
+- Target modern browsers
+- Clean, readable, maintainable code
+
+## Examples
+
+Create a button:
+\`const btn = document.createElement('button'); btn.textContent = 'Click me'; btn.onclick = () => alert('Hello'); document.body.appendChild(btn);\`
+
+Add styles:
+\`const style = document.createElement('style'); style.textContent = 'body { font-family: Arial; background: linear-gradient(45deg, #667eea, #764ba2); }'; document.head.appendChild(style);\`
+
+Build a component:
+\`class MyWidget extends HTMLElement { connectedCallback() { this.innerHTML = '<div>Custom Widget</div>'; } } customElements.define('my-widget', MyWidget); document.body.appendChild(document.createElement('my-widget'));\`
+
+Create images with Pollinations.ai:
+\`const img = document.createElement('img'); img.src = 'https://image.pollinations.ai/prompt/beautiful%20sunset%20over%20mountains?width=800&height=400'; img.style.width = '100%'; document.body.appendChild(img);\`
 
 ## Guidelines
-- Keep changes simple and clean
-- Maintain good HTML structure
-- Use inline CSS for styling changes
-- Make the page look good and functional`;
+- Always execute complete, working code
+- Build beautiful, modern interfaces
+- Make everything interactive and engaging
+- Use semantic HTML structure
+- Implement proper error handling
+- Create responsive layouts that work on all devices`;
 
-// Shadow DOM Custom Element
-class AISandbox extends HTMLElement {
-	constructor() {
-		super();
-		this.root = this.attachShadow({ mode: 'open' });
-		this.initializeContent();
-		this.setupStyles();
-	}
+// Initialize the page with minimal structure
+function initializePage() {
+	document.body.innerHTML = `
+		<h1 id="title">Voice Interface</h1>
+		<div id="content">
+			<p>Ready for voice commands.</p>
+		</div>
+	`;
+}
 
-	initializeContent() {
-		this.root.innerHTML = `
-			<div class="container">
-				<div class="emoji">🌸</div>
-				<h1 id="title">Hello Pollinations</h1>
-				<p>Welcome to your voice-controlled web page! Say something like "change the title to Welcome" or "make the background red" to edit this page.</p>
-			</div>
-		`;
-	}
-
-	setupStyles() {
-		this.styleElement = document.createElement('style');
-		this.defaultStyles = `
-			:host {
-				display: block;
-				font-family: Arial, sans-serif;
-				margin: 0;
-				padding: 40px;
-				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-				min-height: 100vh;
-				box-sizing: border-box;
-			}
-			.container {
-				background: white;
-				padding: 60px;
-				border-radius: 20px;
-				box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-				text-align: center;
-				max-width: 600px;
-				margin: 0 auto;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: center;
-				min-height: calc(100vh - 80px);
-			}
-			h1 {
-				color: #333;
-				font-size: 3em;
-				margin-bottom: 20px;
-				background: linear-gradient(45deg, #667eea, #764ba2);
-				-webkit-background-clip: text;
-				-webkit-text-fill-color: transparent;
-				background-clip: text;
-			}
-			p {
-				color: #666;
-				font-size: 1.2em;
-				line-height: 1.6;
-				margin-bottom: 30px;
-			}
-			.emoji {
-				font-size: 4em;
-				margin-bottom: 20px;
-			}
-		`;
-		this.styleElement.textContent = this.defaultStyles;
-		this.root.appendChild(this.styleElement);
-	}
-
-	updateStyles(newCSS) {
-		// Merge new CSS with default styles
-		this.styleElement.textContent = this.defaultStyles + '\n' + newCSS;
-	}
-
-	// Clean DOM editing - only handles HTML content
-	replaceHTML(html) {
-		const container = this.root.querySelector('.container');
-		if (container) {
-			container.innerHTML = html;
-		}
-	}
-
-	// Dedicated JavaScript execution
-	addScript(jsCode, scriptId = null) {
-		const container = this.root.querySelector('.container');
-		if (container) {
-			// Remove existing script with same ID if provided
-			if (scriptId) {
-				const existingScript = container.querySelector(`script[data-script-id="${scriptId}"]`);
-				if (existingScript) {
-					existingScript.remove();
-				}
-			}
-			
-			// Create and execute new script
-			const script = document.createElement('script');
-			if (scriptId) {
-				script.setAttribute('data-script-id', scriptId);
-			}
-			script.textContent = jsCode;
-			container.appendChild(script);
-			return true;
-		}
-		return false;
-	}
-
-	// Parse full HTML document and separate concerns
-	parseFullHTML(html) {
-		const parser = new DOMParser();
-		const doc = parser.parseFromString(html, 'text/html');
-		
-		// Extract styles
-		const styles = doc.querySelectorAll('style');
-		let extractedCSS = '';
-		styles.forEach(style => {
-			extractedCSS += style.textContent + '\n';
-		});
-		
-		// Extract scripts
-		const scripts = doc.querySelectorAll('script');
-		const extractedJS = Array.from(scripts).map(script => script.textContent).join('\n');
-		
-		// Extract body content (without scripts)
-		const bodyClone = doc.body ? doc.body.cloneNode(true) : document.createElement('body');
-		bodyClone.querySelectorAll('script').forEach(script => script.remove());
-		
-		return {
-			css: extractedCSS.trim(),
-			js: extractedJS.trim(),
-			html: bodyClone.innerHTML
+// Simple JavaScript execution function
+function executeJS(js) {
+	console.log('executeJS called with:', js);
+	try {
+		// Execute the JavaScript directly in the DOM context
+		eval(js);
+		// Return success with current DOM state
+		return { 
+			success: true, 
+			message: 'JavaScript executed successfully',
+			currentDOM: document.body.innerHTML
 		};
-	}
-
-	setText(selector, text) {
-		console.log(`setText called: selector="${selector}", text="${text}"`);
-		const element = this.root.querySelector(selector);
-		if (element) {
-			element.textContent = text;
-			console.log(`Text updated for element:`, element);
-			// Special case: if targeting title, also update document title
-			if (selector === 'h1' || selector === '#title') {
-				document.title = text;
-			}
-			return true;
-		}
-		console.log(`Element not found for selector: ${selector}`);
-		return false;
-	}
-
-	setStyle(selector, property, value) {
-		console.log(`setStyle called: selector="${selector}", property="${property}", value="${value}"`);
-		
-		// Handle :host selector specially - it refers to the custom element itself
-		if (selector === ':host') {
-			this.style[property] = value;
-			console.log('Applied style to :host element');
-			return true;
-		}
-		
-		const element = this.root.querySelector(selector);
-		if (element) {
-			element.style[property] = value;
-			console.log(`Applied style to element:`, element);
-			return true;
-		}
-		console.log(`Element not found for selector: ${selector}`);
-		return false;
-	}
-
-	getDOM() {
-		return this.root.innerHTML;
+	} catch (error) {
+		console.error('JavaScript execution error:', error);
+		return { 
+			success: false, 
+			error: error.message,
+			currentDOM: document.body.innerHTML
+		};
 	}
 }
 
-// Register custom element
-customElements.define('ai-sandbox', AISandbox);
+// Initialize page on load
+document.addEventListener('DOMContentLoaded', initializePage);
 
-// Helper functions to access Shadow DOM
-const getSandbox = () => document.querySelector('ai-sandbox');
-const getSandboxRoot = () => getSandbox()?.shadowRoot;
-
-// Generic voice tools for Shadow DOM
+// Simple voice tools interface with just executeJS
 const fns = {
-	getPageHTML: () => {
-		console.log('getPageHTML called');
-		const sandbox = getSandbox();
-		if (sandbox) {
-			const html = sandbox.getDOM();
-			console.log('Retrieved HTML:', html);
-			return { success: true, html };
-		}
-		console.log('AI Sandbox not found');
-		return { success: false, error: 'AI Sandbox not found' };
-	},
-	editPageHTML: ({ html }) => {
-		console.log('editPageHTML called with:', html);
-		const sandbox = getSandbox();
-		if (sandbox) {
-			// Check if this is a full HTML document or just content
-			if (html.includes('<!DOCTYPE') || html.includes('<html')) {
-				// Parse full HTML document and handle each part separately
-				const parsed = sandbox.parseFullHTML(html);
-				
-				// Update styles if found
-				if (parsed.css) {
-					sandbox.updateStyles(parsed.css);
-				}
-				
-				// Update HTML content
-				sandbox.replaceHTML(parsed.html);
-				
-				// Execute JavaScript if found
-				if (parsed.js) {
-					sandbox.addScript(parsed.js, 'page-script');
-				}
-			} else {
-				// Just content - use as is
-				sandbox.replaceHTML(html);
-			}
-			return { success: true, message: 'Page HTML updated' };
-		}
-		return { success: false, error: 'AI Sandbox not found' };
-	},
-	addScript: ({ jsCode, scriptId }) => {
-		console.log('addScript function called with:', { jsCode: jsCode?.substring(0, 100) + '...', scriptId });
-		const sandbox = getSandbox();
-		if (sandbox) {
-			const success = sandbox.addScript(jsCode, scriptId);
-			if (success) {
-				return { success: true, scriptId, message: 'JavaScript executed successfully' };
-			}
-			return { success: false, error: 'Failed to execute JavaScript' };
-		}
-		return { success: false, error: 'AI Sandbox not found' };
-	},
-	setText: ({ selector, text }) => {
-		console.log('setText function called with:', { selector, text });
-		const sandbox = getSandbox();
-		if (sandbox) {
-			const success = sandbox.setText(selector, text);
-			if (success) {
-				return { success: true, selector, text, message: 'Text updated successfully' };
-			}
-			return { success: false, error: `Element not found for selector: ${selector}` };
-		}
-		return { success: false, error: 'AI Sandbox not found' };
-	},
-	setStyle: ({ selector, property, value }) => {
-		console.log('setStyle function called with:', { selector, property, value });
-		const sandbox = getSandbox();
-		if (sandbox) {
-			const success = sandbox.setStyle(selector, property, value);
-			if (success) {
-				return { success: true, selector, property, value, message: 'Style updated successfully' };
-			}
-			return { success: false, error: `Element not found for selector: ${selector}` };
-		}
-		return { success: false, error: 'AI Sandbox not found' };
+	executeJS: ({ js }) => {
+		return executeJS(js);
 	}
 };
 
@@ -311,68 +129,19 @@ function configureData() {
 	const event = {
 		type: 'session.update',
 		session: {
-			instructions: SYSTEM_PROMPT,
+			instructions: systemPrompt,
 			modalities: ['text', 'audio'],
 			tools: [
 				{
 					type: 'function',
-					name: 'getPageHTML',
-					description: 'Get the current HTML content of the page to see what elements exist',
-					parameters: {
-						type: 'object',
-						properties: {},
-					},
-				},
-				{
-					type: 'function',
-					name: 'setText',
-					description: 'Change text content of any element using CSS selector',
+					name: 'executeJS',
+					description: 'Execute arbitrary JavaScript code to manipulate the page',
 					parameters: {
 						type: 'object',
 						properties: {
-							selector: { type: 'string', description: 'CSS selector for the element (e.g., "h1", "p", ".container", "#title")' },
-							text: { type: 'string', description: 'New text content' },
+							js: { type: 'string', description: 'JavaScript code to execute. You can modify DOM, add styles, create elements, add event listeners, etc. (e.g., "document.getElementById(\'title\').textContent = \'New Title\'", "const btn = document.createElement(\'button\'); btn.textContent = \'Click me\'; btn.onclick = () => alert(\'Hello\'); document.getElementById(\'content\').appendChild(btn);")' },
 						},
-						required: ['selector', 'text'],
-					},
-				},
-				{
-					type: 'function',
-					name: 'setStyle',
-					description: 'Change CSS styling of any element using CSS selector',
-					parameters: {
-						type: 'object',
-						properties: {
-							selector: { type: 'string', description: 'CSS selector for the element (e.g., ":host", ".container", "h1")' },
-							property: { type: 'string', description: 'CSS property name (e.g., "backgroundColor", "fontSize", "color")' },
-							value: { type: 'string', description: 'CSS property value (e.g., "red", "24px", "#333")' },
-						},
-						required: ['selector', 'property', 'value'],
-					},
-				},
-				{
-					type: 'function',
-					name: 'editPageHTML',
-					description: 'Replace the entire HTML content of the page',
-					parameters: {
-						type: 'object',
-						properties: {
-							html: { type: 'string', description: 'Complete HTML content for the page' },
-						},
-						required: ['html'],
-					},
-				},
-				{
-					type: 'function',
-					name: 'addScript',
-					description: 'Execute JavaScript code in the page context',
-					parameters: {
-						type: 'object',
-						properties: {
-							jsCode: { type: 'string', description: 'JavaScript code to execute' },
-							scriptId: { type: 'string', description: 'Optional ID to replace existing script with same ID' },
-						},
-						required: ['jsCode'],
+						required: ['js'],
 					},
 				},
 			],
