@@ -121,17 +121,9 @@ The following libraries are already loaded and ready to use:
 function initializePage() {
 	// Set up button event listeners
 	const startButton = document.getElementById('startButton');
-	const testButton = document.getElementById('testScreenshotButton');
 	
 	if (startButton) {
-		startButton.addEventListener('click', () => {
-			console.log('🎙️ Starting AI conversation...');
-			// The WebRTC connection will be established by the existing code below
-		});
-	}
-	
-	if (testButton) {
-		testButton.addEventListener('click', testScreenshotCapture);
+		startButton.addEventListener('click', toggleAIConversation);
 	}
 	
 	// Log which libraries are available
@@ -235,73 +227,6 @@ const screenshotManager = new ScreenshotManager();
 // Initialize page on load
 document.addEventListener('DOMContentLoaded', initializePage);
 
-// Test screenshot functionality
-async function testScreenshotCapture() {
-	console.log('🧪 Testing screenshot capture...');
-	
-	const statusDiv = document.getElementById('status');
-	statusDiv.textContent = 'Capturing screenshot...';
-	statusDiv.style.background = '#fff3cd';
-	
-	try {
-		// Test the screenshot capture directly
-		const result = await screenshotManager.captureScreenshot();
-		
-		console.log('📸 Screenshot capture result:', result);
-		
-		if (result.success) {
-			// Log image data details
-			console.log('✅ Screenshot captured successfully!');
-			console.log('📏 Image dimensions:', `${result.width}x${result.height}`);
-			console.log('📊 Data URL length:', result.dataURL.length);
-			console.log('🔍 Data URL prefix:', result.dataURL.substring(0, 100));
-			console.log('🔍 Data URL suffix:', result.dataURL.substring(result.dataURL.length - 50));
-			
-			// Test if it's valid base64
-			const base64Data = result.dataURL.split(',')[1];
-			console.log('📝 Base64 data length:', base64Data?.length || 'No base64 data found');
-			
-			// Try to create an image element to verify the data
-			const testImg = new Image();
-			testImg.onload = () => {
-				console.log('✅ Image data is valid - test image loaded successfully');
-				console.log('🖼️ Test image dimensions:', testImg.width, 'x', testImg.height);
-			};
-			testImg.onerror = (error) => {
-				console.error('❌ Image data is invalid:', error);
-			};
-			testImg.src = result.dataURL;
-			
-			statusDiv.textContent = `Screenshot captured: ${result.width}x${result.height} (${Math.round(result.dataURL.length/1024)}KB)`;
-			statusDiv.style.background = '#d4edda';
-			
-			// Test sending to AI if data channel is available
-			if (screenshotManager.dataChannel && screenshotManager.dataChannel.readyState === 'open') {
-				console.log('📡 Testing AI transmission...');
-				const sendResult = await screenshotManager.sendScreenshotToAI(result.dataURL, "Test screenshot from debug button");
-				console.log('📡 AI transmission result:', sendResult);
-				
-				if (sendResult.success) {
-					statusDiv.textContent += ' - Sent to AI successfully!';
-				} else {
-					statusDiv.textContent += ' - Failed to send to AI: ' + sendResult.error;
-				}
-			} else {
-				statusDiv.textContent += ' - AI not connected (start conversation first to test AI transmission)';
-			}
-			
-		} else {
-			console.error('❌ Screenshot capture failed:', result.error);
-			statusDiv.textContent = 'Screenshot failed: ' + result.error;
-			statusDiv.style.background = '#f8d7da';
-		}
-		
-	} catch (error) {
-		console.error('💥 Test screenshot error:', error);
-		statusDiv.textContent = 'Test failed: ' + error.message;
-		statusDiv.style.background = '#f8d7da';
-	}
-}
 
 // Update timestamp every second
 function updateTimestamp() {
@@ -325,6 +250,7 @@ const fns = {
 
 // Create a WebRTC Agent
 const peerConnection = new RTCPeerConnection();
+let isConversationActive = false;
 
 // On inbound audio add to page
 peerConnection.ontrack = (event) => {
@@ -442,38 +368,55 @@ dataChannel.addEventListener('message', async (ev) => {
 	}
 });
 
-// Capture microphone
-navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-	// Add microphone to PeerConnection
-	stream.getTracks().forEach((track) => peerConnection.addTransceiver(track, { direction: 'sendrecv' }));
+// Toggle AI conversation start/stop
+function toggleAIConversation() {
+	const startButton = document.getElementById('startButton');
+	
+	if (!isConversationActive) {
+		console.log('🎙️ Starting AI conversation...');
+		startButton.textContent = 'Stop AI Conversation';
+		isConversationActive = true;
+		
+		// Capture microphone
+		navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+			// Add microphone to PeerConnection
+			stream.getTracks().forEach((track) => peerConnection.addTransceiver(track, { direction: 'sendrecv' }));
 
-	peerConnection.createOffer().then((offer) => {
-		peerConnection.setLocalDescription(offer);
-		fetch('/session')
-			.then((tokenResponse) => tokenResponse.json())
-			.then((data) => {
-				const EPHEMERAL_KEY = data.result.client_secret.value;
-				const baseUrl = 'https://api.openai.com/v1/realtime';
-				const model = 'gpt-realtime';
-				fetch(`${baseUrl}?model=${model}`, {
-					method: 'POST',
-					body: offer.sdp,
-					headers: {
-						Authorization: `Bearer ${EPHEMERAL_KEY}`,
-						'Content-Type': 'application/sdp',
-					},
-				})
-					.then((r) => r.text())
-					.then((answer) => {
-						// Accept answer from Realtime WebRTC API
-						peerConnection.setRemoteDescription({
-							sdp: answer,
-							type: 'answer',
-						});
+			peerConnection.createOffer().then((offer) => {
+				peerConnection.setLocalDescription(offer);
+				fetch('/session')
+					.then((tokenResponse) => tokenResponse.json())
+					.then((data) => {
+						const EPHEMERAL_KEY = data.result.client_secret.value;
+						const baseUrl = 'https://api.openai.com/v1/realtime';
+						const model = 'gpt-realtime';
+						fetch(`${baseUrl}?model=${model}`, {
+							method: 'POST',
+							body: offer.sdp,
+							headers: {
+								Authorization: `Bearer ${EPHEMERAL_KEY}`,
+								'Content-Type': 'application/sdp',
+							},
+						})
+							.then((r) => r.text())
+							.then((answer) => {
+								// Accept answer from Realtime WebRTC API
+								peerConnection.setRemoteDescription({
+									sdp: answer,
+									type: 'answer',
+								});
+							});
 					});
 			});
-
-		// Send WebRTC Offer to Workers Realtime WebRTC API Relay
-	});
-});
+		});
+	} else {
+		console.log('🛑 Stopping AI conversation...');
+		startButton.textContent = 'Start AI Conversation';
+		isConversationActive = false;
+		
+		// Close peer connection
+		peerConnection.close();
+		location.reload(); // Simple reset
+	}
+}
 
