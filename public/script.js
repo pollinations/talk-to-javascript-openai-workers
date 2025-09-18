@@ -11,9 +11,11 @@ Follow the Plain Vanilla Web philosophy:
 - Everything created through direct DOM manipulation
 - Modern, clean, responsive design
 
-## Available Function
+## Available Functions
 
-**executeJS({js})** - Execute JavaScript code to build/modify the page
+**executeJS({js})** - Execute JavaScript code to build/modify the page. Returns the updated DOM state after execution, allowing you to see the current page structure.
+
+**captureScreenshot({message})** - Capture a screenshot of the current page and send it for visual analysis. Automatically optimizes resolution and file size for GPT-realtime API.
 
 ## Pre-loaded Libraries
 
@@ -115,16 +117,22 @@ The following libraries are already loaded and ready to use:
 - Create responsive layouts that work on all devices
 - **Remember: Create before reference, assign IDs, use coherent chunks**`;
 
-// Initialize the page with minimal structure
+// Initialize the page functionality (don't overwrite HTML content)
 function initializePage() {
-	document.body.innerHTML = `
-		<h1 id="title">Voice Interface</h1>
-		<div id="content">
-			<p>✅ All libraries loaded from HTML head!</p>
-			<p>Available: Three.js, A-Frame, GSAP, Anime.js, Lottie, Chart.js, D3.js, p5.js, Fabric.js, Hammer.js, Sortable.js, Howler.js, Video.js, Lodash, Moment.js</p>
-			<p>Ready for voice commands.</p>
-		</div>
-	`;
+	// Set up button event listeners
+	const startButton = document.getElementById('startButton');
+	const testButton = document.getElementById('testScreenshotButton');
+	
+	if (startButton) {
+		startButton.addEventListener('click', () => {
+			console.log('🎙️ Starting AI conversation...');
+			// The WebRTC connection will be established by the existing code below
+		});
+	}
+	
+	if (testButton) {
+		testButton.addEventListener('click', testScreenshotCapture);
+	}
 	
 	// Log which libraries are available
 	console.log('Libraries loaded from HTML:', {
@@ -221,14 +229,98 @@ function executeJS(js) {
 	}
 }
 
+// Initialize screenshot manager
+const screenshotManager = new ScreenshotManager();
+
 // Initialize page on load
 document.addEventListener('DOMContentLoaded', initializePage);
 
-// Simple voice tools interface with just executeJS
+// Test screenshot functionality
+async function testScreenshotCapture() {
+	console.log('🧪 Testing screenshot capture...');
+	
+	const statusDiv = document.getElementById('status');
+	statusDiv.textContent = 'Capturing screenshot...';
+	statusDiv.style.background = '#fff3cd';
+	
+	try {
+		// Test the screenshot capture directly
+		const result = await screenshotManager.captureScreenshot();
+		
+		console.log('📸 Screenshot capture result:', result);
+		
+		if (result.success) {
+			// Log image data details
+			console.log('✅ Screenshot captured successfully!');
+			console.log('📏 Image dimensions:', `${result.width}x${result.height}`);
+			console.log('📊 Data URL length:', result.dataURL.length);
+			console.log('🔍 Data URL prefix:', result.dataURL.substring(0, 100));
+			console.log('🔍 Data URL suffix:', result.dataURL.substring(result.dataURL.length - 50));
+			
+			// Test if it's valid base64
+			const base64Data = result.dataURL.split(',')[1];
+			console.log('📝 Base64 data length:', base64Data?.length || 'No base64 data found');
+			
+			// Try to create an image element to verify the data
+			const testImg = new Image();
+			testImg.onload = () => {
+				console.log('✅ Image data is valid - test image loaded successfully');
+				console.log('🖼️ Test image dimensions:', testImg.width, 'x', testImg.height);
+			};
+			testImg.onerror = (error) => {
+				console.error('❌ Image data is invalid:', error);
+			};
+			testImg.src = result.dataURL;
+			
+			statusDiv.textContent = `Screenshot captured: ${result.width}x${result.height} (${Math.round(result.dataURL.length/1024)}KB)`;
+			statusDiv.style.background = '#d4edda';
+			
+			// Test sending to AI if data channel is available
+			if (screenshotManager.dataChannel && screenshotManager.dataChannel.readyState === 'open') {
+				console.log('📡 Testing AI transmission...');
+				const sendResult = await screenshotManager.sendScreenshotToAI(result.dataURL, "Test screenshot from debug button");
+				console.log('📡 AI transmission result:', sendResult);
+				
+				if (sendResult.success) {
+					statusDiv.textContent += ' - Sent to AI successfully!';
+				} else {
+					statusDiv.textContent += ' - Failed to send to AI: ' + sendResult.error;
+				}
+			} else {
+				statusDiv.textContent += ' - AI not connected (start conversation first to test AI transmission)';
+			}
+			
+		} else {
+			console.error('❌ Screenshot capture failed:', result.error);
+			statusDiv.textContent = 'Screenshot failed: ' + result.error;
+			statusDiv.style.background = '#f8d7da';
+		}
+		
+	} catch (error) {
+		console.error('💥 Test screenshot error:', error);
+		statusDiv.textContent = 'Test failed: ' + error.message;
+		statusDiv.style.background = '#f8d7da';
+	}
+}
+
+// Update timestamp every second
+function updateTimestamp() {
+	const timestampEl = document.getElementById('timestamp');
+	if (timestampEl) {
+		timestampEl.textContent = new Date().toLocaleTimeString();
+	}
+}
+setInterval(updateTimestamp, 1000);
+updateTimestamp();
+
+// Voice tools interface with executeJS and screenshot capabilities
 const fns = {
 	executeJS: async ({ js }) => {
 		return await executeJS(js);
-	}
+	},
+	
+	// Screenshot tools from the screenshot manager
+	...screenshotManager.getVoiceTools()
 };
 
 // Create a WebRTC Agent
@@ -256,13 +348,25 @@ function configureData() {
 				{
 					type: 'function',
 					name: 'executeJS',
-					description: 'Execute arbitrary JavaScript code to manipulate the page',
+					description: 'Execute arbitrary JavaScript code to manipulate the page. Returns an object with success status, message, and currentDOM (the updated HTML structure after execution). Use this to build and modify web pages, then inspect the resulting DOM structure.',
 					parameters: {
 						type: 'object',
 						properties: {
 							js: { type: 'string', description: 'JavaScript code to execute. You can modify DOM, add styles, create elements, add event listeners, etc. (e.g., "document.getElementById(\'title\').textContent = \'New Title\'", "const btn = document.createElement(\'button\'); btn.textContent = \'Click me\'; btn.onclick = () => alert(\'Hello\'); document.getElementById(\'content\').appendChild(btn);")' },
 						},
 						required: ['js'],
+					},
+				},
+				{
+					type: 'function',
+					name: 'captureScreenshot',
+					description: 'Capture a screenshot of the current page and send it for visual analysis. Automatically optimizes resolution and file size.',
+					parameters: {
+						type: 'object',
+						properties: {
+							message: { type: 'string', description: 'Optional message to send with the screenshot (e.g., "What do you see?", "Analyze this layout", "How does this look?"). Default: "What do you see in this screenshot?"' },
+						},
+						required: [],
 					},
 				},
 			],
@@ -273,6 +377,10 @@ function configureData() {
 
 dataChannel.addEventListener('open', (ev) => {
 	console.log('Opening data channel', ev);
+	
+	// Set data channel for screenshot manager
+	screenshotManager.setDataChannel(dataChannel);
+	
 	configureData();
 });
 
@@ -289,6 +397,10 @@ dataChannel.addEventListener('open', (ev) => {
 
 dataChannel.addEventListener('message', async (ev) => {
 	const msg = JSON.parse(ev.data);
+	
+	// Debug: Log all messages from AI
+	console.log('📨 Received message from AI:', msg.type, msg);
+	
 	// Handle function calls
 	if (msg.type === 'response.function_call_arguments.done') {
 		const fn = fns[msg.name];
@@ -310,6 +422,23 @@ dataChannel.addEventListener('message', async (ev) => {
 			// Have assistant respond after getting the results
 			dataChannel.send(JSON.stringify({type:"response.create"}));
 		}
+	}
+	
+	// Debug: Log conversation items and responses
+	if (msg.type === 'conversation.item.created') {
+		console.log('✅ Conversation item created:', msg.item?.type, msg.item?.role);
+	}
+	
+	if (msg.type === 'response.created') {
+		console.log('🎙️ AI response started');
+	}
+	
+	if (msg.type === 'response.done') {
+		console.log('✅ AI response completed:', msg.response?.output);
+	}
+	
+	if (msg.type === 'error') {
+		console.error('❌ AI Error:', msg.error);
 	}
 });
 
