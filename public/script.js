@@ -251,7 +251,7 @@ const fns = {
 const peerConnection = new RTCPeerConnection();
 let isConversationActive = false;
 
-// On inbound audio add to page
+// On inbound audio add to page (NO Shadow DOM - focus on getting basic voice working first)
 peerConnection.ontrack = (event) => {
 	const el = document.createElement('audio');
 	el.srcObject = event.streams[0];
@@ -263,7 +263,7 @@ peerConnection.ontrack = (event) => {
 const dataChannel = peerConnection.createDataChannel('oai-events');
 
 function configureData() {
-	console.log('Configuring data channel');
+	console.log('🔧 Configuring data channel with session update...');
 	const event = {
 		type: 'session.update',
 		session: {
@@ -287,7 +287,9 @@ function configureData() {
 			],
 		},
 	};
+	console.log('🔧 Sending session update:', JSON.stringify(event, null, 2));
 	dataChannel.send(JSON.stringify(event));
+	console.log('🔧 Session update sent successfully');
 }
 
 dataChannel.addEventListener('open', (ev) => {
