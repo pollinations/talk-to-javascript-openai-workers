@@ -221,8 +221,7 @@ function executeJS(js) {
 	}
 }
 
-// Initialize screenshot manager
-const screenshotManager = new ScreenshotManager();
+// Screenshot functionality is now loaded from modules/screenshot.js
 
 // Initialize page on load
 document.addEventListener('DOMContentLoaded', initializePage);
@@ -244,8 +243,8 @@ const fns = {
 		return await executeJS(js);
 	},
 	
-	// Screenshot tools from the screenshot manager
-	...screenshotManager.getVoiceTools()
+	// Screenshot tool from the screenshot module
+	...screenshotVoiceTool
 };
 
 // Create a WebRTC Agent
@@ -283,18 +282,8 @@ function configureData() {
 						required: ['js'],
 					},
 				},
-				{
-					type: 'function',
-					name: 'captureScreenshot',
-					description: 'Capture a screenshot of the current page and send it for visual analysis. Automatically optimizes resolution and file size.',
-					parameters: {
-						type: 'object',
-						properties: {
-							message: { type: 'string', description: 'Optional message to send with the screenshot (e.g., "What do you see?", "Analyze this layout", "How does this look?"). Default: "What do you see in this screenshot?"' },
-						},
-						required: [],
-					},
-				},
+				// Screenshot tool schema from screenshot module
+				screenshotTool,
 			],
 		},
 	};
@@ -304,8 +293,8 @@ function configureData() {
 dataChannel.addEventListener('open', (ev) => {
 	console.log('Opening data channel', ev);
 	
-	// Set data channel for screenshot manager
-	screenshotManager.setDataChannel(dataChannel);
+	// Set data channel for screenshot functionality
+	setScreenshotDataChannel(dataChannel);
 	
 	configureData();
 });
