@@ -15,7 +15,7 @@ app.get('/session', async (c) => {
 		},
 		body: JSON.stringify({
 		  model: "gpt-realtime",
-		  voice: "marin",
+		  voice: "cedar",
 		}),
 	  });
 	  const result = await response.json();

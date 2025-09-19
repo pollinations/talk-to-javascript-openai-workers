@@ -62,6 +62,38 @@ Deploy to Cloudflare Workers:
 npm run deploy
 ```
 
+## Optional Libraries
+
+The interface is designed to be minimal by default, but you can enhance it with additional JavaScript libraries. Here are some that work well with the voice-controlled approach:
+
+### 3D Graphics & Animation
+- **Three.js**: `https://unpkg.com/three@0.158.0/build/three.min.js`
+- **A-Frame**: `https://aframe.io/releases/1.4.0/aframe.min.js`
+- **GSAP**: `https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js`
+
+### Data Visualization
+- **D3.js**: `https://d3js.org/d3.v7.min.js`
+- **Chart.js**: `https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js`
+- **P5.js**: `https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js`
+
+### UI & Interaction
+- **Fabric.js**: `https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js`
+- **Lottie**: `https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js`
+
+### Audio & Media
+- **Tone.js**: `https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js`
+- **Howler.js**: `https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js`
+
+### Usage
+Add any of these to your `index.html` before the main scripts:
+```html
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script src="/modules/screenshot.js"></script>
+<script src="/script.js"></script>
+```
+
+The voice interface will automatically detect available libraries and can use them in executeJS commands.
+
 ## Customization
 
 The system prompt can be edited directly in `public/script.js` to modify Ullim's personality, conversation flow, or add new interactive functions. The interface supports localStorage-based prompt editing for live installations.

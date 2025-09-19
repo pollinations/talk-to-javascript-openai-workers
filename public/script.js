@@ -17,38 +17,9 @@ Follow the Plain Vanilla Web philosophy:
 
 **captureScreenshot({message})** - Capture a screenshot of the current page and send it for visual analysis. Automatically optimizes resolution and file size for GPT-realtime API.
 
-## Pre-loaded Libraries
+## Available Libraries
 
-The following libraries are already loaded and ready to use:
-
-### 3D Graphics & WebGL
-- **THREE** (Three.js v0.169.0) - 3D graphics, WebGL, OrbitControls available
-- **AFRAME** (A-Frame v1.7.1) - VR/AR web experiences with HTML
-
-### Animation Libraries  
-- **gsap** (GSAP v3.12.5) - Professional animations, timelines, ScrollTrigger
-- **anime** (Anime.js v3.2.2) - Lightweight animations
-- **lottie** (Lottie Web v5.12.2) - After Effects animations
-
-### Data Visualization
-- **Chart** (Chart.js v4.5.0) - Simple charts (bar, line, pie, etc.)
-- **d3** (D3.js v7.9.0) - Advanced data visualization and DOM manipulation
-
-### Creative Coding
-- **p5** (p5.js v1.9.4) - Creative coding, generative art, sketches
-- **fabric** (Fabric.js v6.4.2) - Interactive canvas objects
-
-### UI & Interaction
-- **Hammer** (Hammer.js v2.0.8) - Touch gestures and mobile interactions
-- **Sortable** (Sortable.js v1.15.2) - Drag and drop functionality
-
-### Audio/Video
-- **Howl** (Howler.js v2.2.4) - Web audio, sound effects, music
-- **videojs** (Video.js v8.12.0) - HTML5 video player
-
-### Utilities
-- **_** (Lodash v4.17.21) - Utility functions for arrays, objects, etc.
-- **moment** (Moment.js v2.30.1) - Date/time manipulation and formatting
+The interface is minimal by default. Additional JavaScript libraries can be added to `index.html` as needed (see README for suggestions).
 
 ## Execution Strategy
 
@@ -116,6 +87,37 @@ The following libraries are already loaded and ready to use:
 - Implement proper error handling
 - Create responsive layouts that work on all devices
 - **Remember: Create before reference, assign IDs, use coherent chunks**`;
+
+
+
+// ### 3D Graphics & WebGL
+// - **THREE** (Three.js v0.169.0) - 3D graphics, WebGL, OrbitControls available
+// - **AFRAME** (A-Frame v1.7.1) - VR/AR web experiences with HTML
+
+// ### Animation Libraries  
+// - **gsap** (GSAP v3.12.5) - Professional animations, timelines, ScrollTrigger
+// - **anime** (Anime.js v3.2.2) - Lightweight animations
+// - **lottie** (Lottie Web v5.12.2) - After Effects animations
+
+// ### Data Visualization
+// - **Chart** (Chart.js v4.5.0) - Simple charts (bar, line, pie, etc.)
+// - **d3** (D3.js v7.9.0) - Advanced data visualization and DOM manipulation
+
+// ### Creative Coding
+// - **p5** (p5.js v1.9.4) - Creative coding, generative art, sketches
+// - **fabric** (Fabric.js v6.4.2) - Interactive canvas objects
+
+// ### UI & Interaction
+// - **Hammer** (Hammer.js v2.0.8) - Touch gestures and mobile interactions
+// - **Sortable** (Sortable.js v1.15.2) - Drag and drop functionality
+
+// ### Audio/Video
+// - **Howl** (Howler.js v2.2.4) - Web audio, sound effects, music
+// - **videojs** (Video.js v8.12.0) - HTML5 video player
+
+// ### Utilities
+// - **_** (Lodash v4.17.21) - Utility functions for arrays, objects, etc.
+// - **moment** (Moment.js v2.30.1) - Date/time manipulation and formatting
 
 // Initialize the page functionality (don't overwrite HTML content)
 function initializePage() {
