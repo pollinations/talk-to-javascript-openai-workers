@@ -323,8 +323,8 @@ document.body.appendChild(btn);
     let isConversationActive = false;
     let voiceButton = null;
 
-    function createPasswordPrompt() {
-        // Create password prompt interface
+    function createVoiceInterface() {
+        // Create voice interface with password protection
         voiceButton = document.createElement('div');
         voiceButton.innerHTML = `
             <div id="pollinations-voice-interface" style="
@@ -356,7 +356,7 @@ document.body.appendChild(btn);
                     margin-bottom: 8px;
                     outline: none;
                 " />
-                <button id="pollinations-unlock-btn" style="
+                <button id="pollinations-voice-btn" style="
                     padding: 10px 16px; 
                     font-size: 14px; 
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
@@ -368,7 +368,7 @@ document.body.appendChild(btn);
                     width: 100%;
                     transition: all 0.2s ease;
                 " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                    🔓 Unlock Voice Editor
+                    🎤 Start Voice Editing
                 </button>
             </div>
         `;
@@ -377,28 +377,29 @@ document.body.appendChild(btn);
         
         // Add event handlers
         const passwordInput = document.getElementById('pollinations-password');
-        const unlockButton = document.getElementById('pollinations-unlock-btn');
+        const voiceBtn = document.getElementById('pollinations-voice-btn');
         
         // Handle enter key in password field
         passwordInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                checkPassword();
+                voiceBtn.click();
             }
         });
         
-        // Handle unlock button click
-        unlockButton.addEventListener('click', checkPassword);
+        // Handle voice button click with password check
+        voiceBtn.addEventListener('click', handleVoiceButtonClick);
         
         // Focus password input
         passwordInput.focus();
     }
 
-    function checkPassword() {
+    function handleVoiceButtonClick() {
         const passwordInput = document.getElementById('pollinations-password');
         const password = passwordInput.value;
         
         if (password === 'pollinations') {
-            createVoiceInterface();
+            // Password correct - activate voice interface
+            activateVoiceInterface();
         } else {
             // Show error feedback
             passwordInput.style.borderColor = '#f44336';
@@ -415,33 +416,23 @@ document.body.appendChild(btn);
         }
     }
 
-    function createVoiceInterface() {
-        // Replace password prompt with voice interface
+    function activateVoiceInterface() {
+        // Update interface to show activated state
         const interfaceDiv = document.getElementById('pollinations-voice-interface');
-        interfaceDiv.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <div style="width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; opacity: 0.8;"></div>
-                <span style="font-size: 14px; font-weight: 500;">Voice Editor</span>
-            </div>
-            <button id="pollinations-voice-btn" style="
-                padding: 10px 16px; 
-                font-size: 14px; 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                color: white; 
-                border: none; 
-                border-radius: 8px; 
-                cursor: pointer; 
-                font-weight: 500;
-                width: 100%;
-                transition: all 0.2s ease;
-            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                🎤 Start Voice Editing
-            </button>
-        `;
+        const statusDot = interfaceDiv.querySelector('div > div');
+        const passwordInput = document.getElementById('pollinations-password');
+        const voiceBtn = document.getElementById('pollinations-voice-btn');
         
-        // Add click handler
-        const button = document.getElementById('pollinations-voice-btn');
-        button.addEventListener('click', toggleVoiceConversation);
+        // Change status to green and hide password field
+        statusDot.style.background = '#4CAF50';
+        passwordInput.style.display = 'none';
+        
+        // Update button handler to toggle voice conversation
+        voiceBtn.removeEventListener('click', handleVoiceButtonClick);
+        voiceBtn.addEventListener('click', toggleVoiceConversation);
+        
+        // Start voice conversation immediately
+        toggleVoiceConversation();
     }
 
     function buildSessionConfig() {
@@ -637,9 +628,9 @@ This is the existing webpage you can enhance with voice commands. Analyze the st
     function init() {
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', createPasswordPrompt);
+            document.addEventListener('DOMContentLoaded', createVoiceInterface);
         } else {
-            createPasswordPrompt();
+            createVoiceInterface();
         }
         
         // Mark as loaded with server configuration
