@@ -220,23 +220,10 @@ document.body.appendChild(btn);
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Calculate optimal dimensions
-            const maxWidth = 1920;
-            const maxHeight = 1080;
-            const aspectRatio = video.videoWidth / video.videoHeight;
-            
-            let width = video.videoWidth;
-            let height = video.videoHeight;
-            
-            if (width > maxWidth) {
-                width = maxWidth;
-                height = width / aspectRatio;
-            }
-            
-            if (height > maxHeight) {
-                height = maxHeight;
-                width = height * aspectRatio;
-            }
+            // Calculate optimal dimensions (simple scaling)
+            const scale = Math.min(1920 / video.videoWidth, 1080 / video.videoHeight, 1);
+            const width = Math.floor(video.videoWidth * scale);
+            const height = Math.floor(video.videoHeight * scale);
             
             canvas.width = width;
             canvas.height = height;
@@ -449,13 +436,6 @@ document.body.appendChild(btn);
     function sendInitialPageContext(dataChannel) {
         console.log('📄 Sending page context to AI...');
         
-        const pageStructure = {
-            title: document.title,
-            url: window.location.href,
-            viewport: { width: window.innerWidth, height: window.innerHeight },
-            bodyHTML: document.body.outerHTML.substring(0, 2000) + '...' // Truncate for context
-        };
-        
         const contextMessage = {
             type: 'conversation.item.create',
             item: {
@@ -465,12 +445,12 @@ document.body.appendChild(btn);
                     type: 'input_text',
                     text: `CURRENT PAGE CONTEXT:
 
-Title: ${pageStructure.title}
-URL: ${pageStructure.url}
-Viewport: ${pageStructure.viewport.width}x${pageStructure.viewport.height}
+Title: ${document.title}
+URL: ${window.location.href}
+Viewport: ${window.innerWidth}x${window.innerHeight}
 
 Current Page Structure (truncated):
-${pageStructure.bodyHTML}
+${document.body.outerHTML.substring(0, 2000)}...
 
 This is the existing webpage you can enhance with voice commands. Analyze the structure and suggest improvements or wait for user requests.`
                 }]
@@ -507,7 +487,6 @@ This is the existing webpage you can enhance with voice commands. Analyze the st
                 },
             };
             
-            console.log('🔴 ERROR_FEEDBACK: WebRTC message sent to AI:', JSON.stringify(outputEvent).substring(0, 200) + '...');
             dataChannel.send(JSON.stringify(outputEvent));
             dataChannel.send(JSON.stringify({ type: 'response.create' }));
         } else {
@@ -624,28 +603,22 @@ This is the existing webpage you can enhance with voice commands. Analyze the st
         }
     }
 
-    // Initialize the voice interface
-    function init() {
-        // Wait for DOM to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', createVoiceInterface);
-        } else {
-            createVoiceInterface();
-        }
-        
-        // Mark as loaded with server configuration
-        window.pollinationsVoiceEmbed = {
-            version: '1.0.0',
-            serverUrl: 'https://voicevibecode.thomash-efd.workers.dev', // Default server URL
-            executeJS,
-            captureScreenshot,
-            toggleVoiceConversation
-        };
-        
-        console.log('✅ Pollinations Voice Embed ready!');
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', createVoiceInterface);
+    } else {
+        createVoiceInterface();
     }
-
-    // Initialize
-    init();
+    
+    // Mark as loaded with server configuration
+    window.pollinationsVoiceEmbed = {
+        version: '1.0.0',
+        serverUrl: 'https://voicevibecode.thomash-efd.workers.dev',
+        executeJS,
+        captureScreenshot,
+        toggleVoiceConversation
+    };
+    
+    console.log('✅ Pollinations Voice Embed ready!');
 
 })();
