@@ -129,15 +129,20 @@ document.body.appendChild(btn);
             stack: args[0]?.stack || null
         });
         
+        console.log('🔴 ERROR_FEEDBACK: Captured error for AI:', errorMessage);
+        
         const now = Date.now();
         recentErrors = recentErrors
             .filter(err => now - err.timestamp < 30000)
             .slice(-5);
+        
+        console.log('🔴 ERROR_FEEDBACK: Total errors in queue:', recentErrors.length);
     };
 
     // Execute JavaScript with error collection
     function executeJS(js) {
         console.log('🔧 executeJS called with:', js);
+        console.log('🔴 ERROR_FEEDBACK: Clearing error queue, starting fresh');
         recentErrors = [];
         
         try {
@@ -145,6 +150,9 @@ document.body.appendChild(btn);
             
             return new Promise(resolve => {
                 setTimeout(() => {
+                    console.log('🔴 ERROR_FEEDBACK: After 500ms delay, checking for errors...');
+                    console.log('🔴 ERROR_FEEDBACK: Found', recentErrors.length, 'runtime errors');
+                    
                     const result = {
                         success: true,
                         message: 'JavaScript executed successfully',
@@ -159,6 +167,8 @@ document.body.appendChild(btn);
                         }));
                         result.message += ` (${recentErrors.length} runtime error(s) detected)`;
                         result.success = false;
+                        
+                        console.log('🔴 ERROR_FEEDBACK: Including runtime errors in result:', result.runtimeErrors);
                     }
                     
                     resolve(result);
@@ -167,6 +177,7 @@ document.body.appendChild(btn);
             
         } catch (error) {
             console.error('❌ JavaScript execution error:', error);
+            console.log('🔴 ERROR_FEEDBACK: Syntax error caught, including in result');
             return { 
                 success: false, 
                 error: error.message,
@@ -312,8 +323,8 @@ document.body.appendChild(btn);
     let isConversationActive = false;
     let voiceButton = null;
 
-    function createVoiceInterface() {
-        // Create floating voice button
+    function createPasswordPrompt() {
+        // Create password prompt interface
         voiceButton = document.createElement('div');
         voiceButton.innerHTML = `
             <div id="pollinations-voice-interface" style="
@@ -331,10 +342,21 @@ document.body.appendChild(btn);
                 border: 1px solid rgba(255,255,255,0.1);
             ">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <div style="width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; opacity: 0.8;"></div>
+                    <div style="width: 8px; height: 8px; background: #ff9800; border-radius: 50%; opacity: 0.8;"></div>
                     <span style="font-size: 14px; font-weight: 500;">Voice Editor</span>
                 </div>
-                <button id="pollinations-voice-btn" style="
+                <input type="password" id="pollinations-password" placeholder="Enter password" style="
+                    padding: 10px; 
+                    font-size: 14px; 
+                    background: rgba(255,255,255,0.1); 
+                    color: white; 
+                    border: 1px solid rgba(255,255,255,0.2); 
+                    border-radius: 6px; 
+                    width: 100%;
+                    margin-bottom: 8px;
+                    outline: none;
+                " />
+                <button id="pollinations-unlock-btn" style="
                     padding: 10px 16px; 
                     font-size: 14px; 
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
@@ -346,12 +368,76 @@ document.body.appendChild(btn);
                     width: 100%;
                     transition: all 0.2s ease;
                 " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                    🎤 Start Voice Editing
+                    🔓 Unlock Voice Editor
                 </button>
             </div>
         `;
         
         document.body.appendChild(voiceButton);
+        
+        // Add event handlers
+        const passwordInput = document.getElementById('pollinations-password');
+        const unlockButton = document.getElementById('pollinations-unlock-btn');
+        
+        // Handle enter key in password field
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        // Handle unlock button click
+        unlockButton.addEventListener('click', checkPassword);
+        
+        // Focus password input
+        passwordInput.focus();
+    }
+
+    function checkPassword() {
+        const passwordInput = document.getElementById('pollinations-password');
+        const password = passwordInput.value;
+        
+        if (password === 'pollinations') {
+            createVoiceInterface();
+        } else {
+            // Show error feedback
+            passwordInput.style.borderColor = '#f44336';
+            passwordInput.style.background = 'rgba(244, 67, 54, 0.1)';
+            passwordInput.value = '';
+            passwordInput.placeholder = 'Incorrect password';
+            
+            // Reset after 2 seconds
+            setTimeout(() => {
+                passwordInput.style.borderColor = 'rgba(255,255,255,0.2)';
+                passwordInput.style.background = 'rgba(255,255,255,0.1)';
+                passwordInput.placeholder = 'Enter password';
+            }, 2000);
+        }
+    }
+
+    function createVoiceInterface() {
+        // Replace password prompt with voice interface
+        const interfaceDiv = document.getElementById('pollinations-voice-interface');
+        interfaceDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <div style="width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; opacity: 0.8;"></div>
+                <span style="font-size: 14px; font-weight: 500;">Voice Editor</span>
+            </div>
+            <button id="pollinations-voice-btn" style="
+                padding: 10px 16px; 
+                font-size: 14px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: white; 
+                border: none; 
+                border-radius: 8px; 
+                cursor: pointer; 
+                font-weight: 500;
+                width: 100%;
+                transition: all 0.2s ease;
+            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                🎤 Start Voice Editing
+            </button>
+        `;
         
         // Add click handler
         const button = document.getElementById('pollinations-voice-btn');
@@ -411,6 +497,16 @@ This is the existing webpage you can enhance with voice commands. Analyze the st
             const result = await fn(args);
             console.log('✅ Function result:', result);
             
+            // Log error feedback being sent to AI
+            if (result.runtimeErrors || result.error) {
+                console.log('🔴 ERROR_FEEDBACK: Sending error info to AI via WebRTC');
+                console.log('🔴 ERROR_FEEDBACK: Error details being sent:', {
+                    success: result.success,
+                    error: result.error,
+                    runtimeErrors: result.runtimeErrors
+                });
+            }
+            
             const outputEvent = {
                 type: 'conversation.item.create',
                 item: {
@@ -419,6 +515,8 @@ This is the existing webpage you can enhance with voice commands. Analyze the st
                     output: JSON.stringify(result),
                 },
             };
+            
+            console.log('🔴 ERROR_FEEDBACK: WebRTC message sent to AI:', JSON.stringify(outputEvent).substring(0, 200) + '...');
             dataChannel.send(JSON.stringify(outputEvent));
             dataChannel.send(JSON.stringify({ type: 'response.create' }));
         } else {
@@ -539,9 +637,9 @@ This is the existing webpage you can enhance with voice commands. Analyze the st
     function init() {
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', createVoiceInterface);
+            document.addEventListener('DOMContentLoaded', createPasswordPrompt);
         } else {
-            createVoiceInterface();
+            createPasswordPrompt();
         }
         
         // Mark as loaded with server configuration
